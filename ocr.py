@@ -25,6 +25,19 @@ def parse(imageUrl):
 
     return boxes
 
+def draw_boxes(imageUrl, boxes):
+    img = url_to_image(imageUrl)
+
+    print(boxes)
+    for box in boxes:
+        img = cv2.rectangle(img, (box['x'], box['y']), (box['x'] + box['width'], box['y'] + box['height']), (0, 255, 0), 2)
+    
+    filename = "/tmp/temp.png";
+    cv2.imwrite(filename, img)
+
+    return filename
+
+
 def parse_to_image(imageUrl):
 
     img = url_to_image(imageUrl)
@@ -51,12 +64,43 @@ def image_boxes(imageUrl, positions):
 
     print(positions)
     for position in positions:
-        img = cv2.rectangle(img, (position['x'], position['y']), (position['x'] + position['w'], position['y'] + position['h']), (0, 255, 0), 2)
+        print ("position")
+        print (position)
+        img = cv2.rectangle(img, (int(position['x']), int(position['y'])), (int(position['x']) + int(position['w']), int(position['y']) + int(position['h'])), (0, 255, 0), 2)
+        if 'text' in position.keys() :
+            img = cv2.putText(img, position['text'], (int(position['x']) + 5, int(position['y']) + int(position['h']/2)), cv2.FONT_HERSHEY_SIMPLEX, .4, (255,0,0))
     
     filename = "/tmp/temp.png";
     cv2.imwrite(filename, img)
 
     return filename
+
+def image_boxes_to_text(imageUrl, positions):
+
+    img = url_to_image(imageUrl)
+    #img = get_grayscale(img)
+    #img = canny(img)
+
+    for position in positions:
+
+        croppedimg = img[int(position['y']):int(position['y']) + int(position['h']), int(position['x']):int(position['x']) + int(position['w'])]
+        d = pytesseract.image_to_data(croppedimg, output_type=Output.DICT)
+
+        text = ""
+        l = len(d['text'])
+        for i in range(l):
+            if(len(d['text']) > 0):
+                text = text + d['text'][i] + " "
+
+        text = text.strip()
+        position['text'] = text
+        print ("position")
+        print (position)
+    
+
+    return positions
+
+
 
 def url_to_image(url, readFlag=cv2.IMREAD_COLOR):
     # download the image, convert it to a NumPy array, and then read

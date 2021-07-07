@@ -1,4 +1,5 @@
 service: tesseract-ocr-service
-runtime: python39 
+runtime: python39
+instance_class: F2 
 env_variables:
   APPLICATION_PORT: 8080
