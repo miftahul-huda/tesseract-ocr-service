@@ -1,3 +1,4 @@
+from turtle import position
 import cv2
 import pytesseract
 from pytesseract import Output
@@ -99,6 +100,45 @@ def image_boxes_to_text(imageUrl, positions):
     
 
     return positions
+
+def image_2dboxes_to_text(imageUrl, rows):
+
+    img = url_to_image(imageUrl)
+    #img = get_grayscale(img)
+    #img = canny(img)
+
+    newRows = []
+
+    for row in rows:
+        newRow = []
+        total_empty = 0
+        for position in row:
+
+            croppedimg = img[int(position['y']):int(position['y']) + int(position['h']), int(position['x']):int(position['x']) + int(position['w'])]
+            d = pytesseract.image_to_data(croppedimg, output_type=Output.DICT)
+
+            text = ""
+            l = len(d['text'])
+            for i in range(l):
+                if(len(d['text']) > 0):
+                    text = text + d['text'][i] + " "
+
+            text = text.strip()
+            position['text'] = text
+            print ("position")
+            print (position)
+
+            newRow.append(position)
+
+            if len(text) == 0:
+                total_empty = total_empty + 1
+
+        if total_empty >= len(row):
+            break
+        else:
+            newRows.append(newRow)
+
+    return newRows
 
 
 
