@@ -63,6 +63,6 @@ def image2dboxes2text():
     return json.jsonify(positions)
 
 if __name__ == '__main__':
-    app.run(port=os.environ['APPLICATION_PORT'])
+    app.run(host='0.0.0.0',port=os.environ['APPLICATION_PORT'])
 
 
