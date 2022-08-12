@@ -104,6 +104,7 @@ def image_boxes_to_text(imageUrl, positions):
 def image_2dboxes_to_text(imageUrl, rows):
 
     img = url_to_image(imageUrl)
+    #img = remove_noise(img)
     #img = get_grayscale(img)
     #img = canny(img)
 
@@ -138,7 +139,31 @@ def image_2dboxes_to_text(imageUrl, rows):
         else:
             newRows.append(newRow)
 
+    #draw_image_2dboxes(imageUrl, rows)
+
     return newRows
+
+def draw_image_2dboxes(imageUrl, rows):
+
+    img = url_to_image(imageUrl)
+    #img = get_grayscale(img)
+    #img = canny(img)
+
+    newRows = []
+
+    for row in rows:
+        newRow = []
+        total_empty = 0
+        for position in row:
+            img2 = cv2.rectangle(img, (int(position['x']), int(position['y'])), (int(position['x']) + int(position['w']), int(position['y']) + int(position['h'])), (0, 255, 0), 2)
+            if 'text' in position.keys() :
+                img = cv2.putText(img, position['text'], (int(position['x']) + 5, int(position['y']) + int(position['h']/2)), cv2.FONT_HERSHEY_SIMPLEX, .4, (255,0,0))
+
+
+    filename = "/tmp/temp.png";
+    cv2.imwrite(filename, img)
+
+    return filename
 
 
 

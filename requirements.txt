@@ -5,7 +5,7 @@ Jinja2==3.0.1
 numpy==1.17.5
 opencv-python
 panda
-pandas==1.4.3
+pandas
 Pillow==8.2.0
 pyparsing==2.4.7
 pytesseract==0.3.7
