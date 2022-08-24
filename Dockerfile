@@ -20,6 +20,7 @@ COPY . ./
 # Install production dependencies.
 RUN  pip install scikit-build
 RUN pip install -r requirements.txt
+RUN pip install --upgrade google-cloud-vision
 
 
 ENV APPLICATION_PORT=8080

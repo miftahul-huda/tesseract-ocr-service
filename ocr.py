@@ -5,6 +5,16 @@ from pytesseract import Output
 from urllib.request import urlopen
 from urllib.parse import quote
 import numpy as np
+import io
+import uuid
+
+
+def random_string(string_length=10):
+    """Returns a random string of length string_length."""
+    random = str(uuid.uuid4()) # Convert UUID format to a Python string.
+    random = random.upper() # Make all characters uppercase.
+    random = random.replace("-","") # Remove the UUID '-'.
+    return random[0:string_length] # Return the random string.
 
 
 def parse(imageUrl):
@@ -101,6 +111,32 @@ def image_boxes_to_text(imageUrl, positions):
 
     return positions
 
+def image_boxes_to_text_vision_api(imageUrl, positions):
+
+    img = url_to_image(imageUrl)
+    #img = get_grayscale(img)
+    #img = canny(img)
+
+    for position in positions:
+
+        croppedimg = img[int(position['y']):int(position['y']) + int(position['h']), int(position['x']):int(position['x']) + int(position['w'])]
+        #d = pytesseract.image_to_data(croppedimg, output_type=Output.DICT)
+
+        filename = random_string(10)
+        filename = "/tmp/" + filename + ".png";
+        cv2.imwrite(filename, croppedimg)
+
+        print("Detecting text in " + filename)
+        text = detect_text(filename)
+        text = text.strip()
+
+        position['text'] = text
+        print ("position")
+        print (position)
+    
+
+    return positions
+
 def image_2dboxes_to_text(imageUrl, rows):
 
     img = url_to_image(imageUrl)
@@ -140,6 +176,49 @@ def image_2dboxes_to_text(imageUrl, rows):
             newRows.append(newRow)
 
     #draw_image_2dboxes(imageUrl, rows)
+
+    return newRows
+
+def image_2dboxes_to_text_vision_api(imageUrl, rows):
+
+    img = url_to_image(imageUrl)
+    #img = remove_noise(img)
+    #img = get_grayscale(img)
+    #img = canny(img)
+
+    newRows = []
+
+    for row in rows:
+        newRow = []
+        total_empty = 0
+        for position in row:
+
+            croppedimg = img[int(position['y']):int(position['y']) + int(position['h']), int(position['x']):int(position['x']) + int(position['w'])]
+            #d = pytesseract.image_to_data(croppedimg, output_type=Output.DICT)
+
+            text = ""
+            filename = random_string(10)
+            filename = "/tmp/" + filename + ".png";
+            cv2.imwrite(filename, croppedimg)
+
+            print("Detecting text in " + filename)
+            text = detect_text(filename)
+            text = text.strip()
+            position['text'] = text
+            print ("position")
+            print (position)
+
+            newRow.append(position)
+
+            if len(text) == 0:
+                total_empty = total_empty + 1
+
+        if total_empty >= len(row):
+            break
+        else:
+            newRows.append(newRow)
+
+    #draw_image_2dboxes(imageUrl, newRows)
 
     return newRows
 
@@ -229,3 +308,35 @@ def deskew(image):
 #template matching
 def match_template(image, template):
     return cv2.matchTemplate(image, template, cv2.TM_CCOEFF_NORMED) 
+
+
+
+
+def detect_text(imagepath):
+    """Detects text in the file located in Google Cloud Storage or on the Web.
+    """
+    from google.cloud import vision
+    client = vision.ImageAnnotatorClient()
+
+    with io.open(imagepath, 'rb') as image_file:
+        content = image_file.read()
+
+    image = vision.Image(content=content)
+
+    response = client.text_detection(image=image)
+    texts = response.text_annotations
+    print('Texts:')
+    #print(texts)
+
+    idx  = 0
+    concanetated_text  = ""
+    for text in texts:
+        print(text)
+        if idx == 0:
+            concanetated_text = concanetated_text + text.description + ' '
+        idx = idx + 1
+
+    if response.error.message:
+        concanetated_text = ''
+
+    return concanetated_text

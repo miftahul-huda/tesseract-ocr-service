@@ -2,7 +2,7 @@ from flask import Flask
 from flask import request
 from flask import json
 from flask.wrappers import Request
-from ocr import draw_boxes, parse, parse_to_image, image_boxes, image_boxes_to_text, image_2dboxes_to_text
+from ocr import draw_boxes, parse, parse_to_image, image_boxes, image_boxes_to_text, image_boxes_to_text_vision_api, image_2dboxes_to_text, image_2dboxes_to_text_vision_api
 from six.moves import urllib
 import os
 app = Flask(__name__)
@@ -48,7 +48,8 @@ def imageboxes2text():
     print("Positions")
     print(content["positions"])
     
-    positions = image_boxes_to_text(url, content["positions"])
+    #positions = image_boxes_to_text(url, content["positions"])
+    positions = image_boxes_to_text_vision_api(url, content["positions"])
     return json.jsonify(positions)
 
 @app.route('/image2dboxes2text', methods=['GET', 'POST'])
@@ -57,9 +58,11 @@ def image2dboxes2text():
     content = request.json
 
     print("Positions")
-    print(content["positions"])
+    #print(content["positions"])
     
-    positions = image_2dboxes_to_text(url, content["positions"])
+    #positions = image_2dboxes_to_text(url, content["positions"])
+    positions = image_2dboxes_to_text_vision_api(url, content["positions"])
+    
     return json.jsonify(positions)
 
 if __name__ == '__main__':
