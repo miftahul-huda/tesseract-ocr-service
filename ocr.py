@@ -8,6 +8,8 @@ import numpy as np
 import io
 import uuid
 import os
+import requests
+
 
 
 
@@ -49,6 +51,28 @@ def draw_boxes(imageUrl, boxes):
     cv2.imwrite(filename, img)
 
     return filename
+
+def draw_rects_2_image(img, boxes):
+    
+    for position in boxes:
+        img = cv2.rectangle(img, (int(position['x']), int(position['y'])), (int(position['x']) + int(position['w']), int(position['y']) + int(position['h'])), (0, 255, 0), 2)
+        if 'text' in position.keys() :
+            img = cv2.putText(img, position['text'], (int(position['x']) + 5, int(position['y']) + int(position['h']/2)), cv2.FONT_HERSHEY_SIMPLEX, .4, (255,0,0))
+
+    return img
+
+def draw_2drects_2_image(img, rows):
+    
+
+    for row in rows:
+        newRow = []
+        total_empty = 0
+        for position in row:
+            img = cv2.rectangle(img, (int(position['x']), int(position['y'])), (int(position['x']) + int(position['w']), int(position['y']) + int(position['h'])), (0, 255, 0), 2)
+            if 'text' in position.keys() :
+                img = cv2.putText(img, position['text'], (int(position['x']) + 5, int(position['y']) + int(position['h']/2)), cv2.FONT_HERSHEY_SIMPLEX, .4, (255,0,0))
+
+    return img
 
 
 def parse_to_image(imageUrl):
@@ -140,7 +164,26 @@ def image_boxes_to_text_vision_api(imageUrl, positions):
             os.remove(filename)
     
 
-    return positions
+    # Draw rectangles to image, save to temporary file, and upload it
+    img = draw_rects_2_image(img, positions)
+    fname = "/tmp/" + random_string(10) + ".png";
+    cv2.imwrite(fname, img)
+
+    #Upload the temporary file
+    response = upload_image(fname)
+
+    # delete after uploading it
+    if os.path.exists(fname):
+        os.remove(fname)
+
+    # Create response dictionary for position and image
+    imgurl = response.json()["payload"]
+    imgurl = imgurl.replace("gs://", "https://storage.googleapis.com/")
+    to_return = {}
+    to_return["positions"] = positions
+    to_return["image"] = imgurl
+
+    return to_return
 
 def image_2dboxes_to_text(imageUrl, rows):
 
@@ -228,7 +271,28 @@ def image_2dboxes_to_text_vision_api(imageUrl, rows):
 
     #draw_image_2dboxes(imageUrl, newRows)
 
-    return newRows
+    # Draw rectangles to image, save to temporary file, and upload it
+    img = draw_2drects_2_image(img, newRows)
+    fname = "/tmp/" + random_string(10) + ".png";
+    cv2.imwrite(fname, img)
+
+    #Upload the temporary file
+    response = upload_image(fname)
+    print("response")
+    print(response)
+
+    # delete after uploading it
+    if os.path.exists(fname):
+        os.remove(fname)
+
+    # Create response dictionary for position and image
+    imgurl = response.json()["payload"]
+    imgurl = imgurl.replace("gs://", "https://storage.googleapis.com/")
+    to_return = {}
+    to_return["positions"] = newRows
+    to_return["image"] = imgurl
+
+    return to_return
 
 def draw_image_2dboxes(imageUrl, rows):
 
@@ -252,6 +316,14 @@ def draw_image_2dboxes(imageUrl, rows):
 
     return filename
 
+
+def upload_image(filename):
+    file = open(filename, "rb")
+    url = os.environ["UPLOADER_API"] + "/upload/gcs/" + os.environ["GCP_PROJECT"] + "/" + os.environ["GCP_UPLOAD_BUCKET"] + "/" + os.environ["GCP_UPLOAD_FOLDER"]
+    print("uploading to : " + url)
+    response = requests.post(url, files = {"file": file})
+    file.close()
+    return response
 
 
 def url_to_image(url, readFlag=cv2.IMREAD_COLOR):

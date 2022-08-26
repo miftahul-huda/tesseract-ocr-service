@@ -24,6 +24,10 @@ RUN pip install --upgrade google-cloud-vision
 
 
 ENV APPLICATION_PORT=8080
+ENV GCP_PROJECT=levenshtein-dev
+ENV GCP_UPLOAD_BUCKET=levenshtein-upload-bucket
+ENV GCP_UPLOAD_FOLDER=images
+ENV UPLOADER_API=https://gcsfileuploader-v2-dot-levenshtein-dev.et.r.appspot.co
 EXPOSE 8080
 
 # Run the web service on container startup. Here we use the gunicorn
