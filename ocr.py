@@ -7,6 +7,8 @@ from urllib.parse import quote
 import numpy as np
 import io
 import uuid
+import os
+
 
 
 def random_string(string_length=10):
@@ -133,6 +135,9 @@ def image_boxes_to_text_vision_api(imageUrl, positions):
         position['text'] = text
         print ("position")
         print (position)
+
+        if os.path.exists(filename):
+            os.remove(filename)
     
 
     return positions
@@ -209,6 +214,9 @@ def image_2dboxes_to_text_vision_api(imageUrl, rows):
             print (position)
 
             newRow.append(position)
+
+            if os.path.exists(filename):
+                os.remove(filename)
 
             if len(text) == 0:
                 total_empty = total_empty + 1
