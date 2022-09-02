@@ -135,7 +135,26 @@ def image_boxes_to_text(imageUrl, positions):
         print (position)
     
 
-    return positions
+    # Draw rectangles to image, save to temporary file, and upload it
+    img = draw_rects_2_image(img, positions)
+    fname = "/tmp/" + random_string(10) + ".png";
+    cv2.imwrite(fname, img)
+
+    #Upload the temporary file
+    response = upload_image(fname)
+
+    # delete after uploading it
+    if os.path.exists(fname):
+        os.remove(fname)
+
+    # Create response dictionary for position and image
+    imgurl = response.json()["payload"]
+    imgurl = imgurl.replace("gs://", "https://storage.googleapis.com/")
+    to_return = {}
+    to_return["positions"] = positions
+    to_return["image"] = imgurl
+
+    return to_return
 
 def image_boxes_to_text_vision_api(imageUrl, positions):
 
@@ -224,8 +243,28 @@ def image_2dboxes_to_text(imageUrl, rows):
             newRows.append(newRow)
 
     #draw_image_2dboxes(imageUrl, rows)
+    # Draw rectangles to image, save to temporary file, and upload it
+    img = draw_2drects_2_image(img, newRows)
+    fname = "/tmp/" + random_string(10) + ".png";
+    cv2.imwrite(fname, img)
 
-    return newRows
+    #Upload the temporary file
+    response = upload_image(fname)
+    print("response")
+    print(response)
+
+    # delete after uploading it
+    if os.path.exists(fname):
+        os.remove(fname)
+
+    # Create response dictionary for position and image
+    imgurl = response.json()["payload"]
+    imgurl = imgurl.replace("gs://", "https://storage.googleapis.com/")
+    to_return = {}
+    to_return["positions"] = newRows
+    to_return["image"] = imgurl
+
+    return to_return
 
 def image_2dboxes_to_text_vision_api(imageUrl, rows):
 
@@ -395,6 +434,8 @@ def match_template(image, template):
 def detect_text(imagepath):
     """Detects text in the file located in Google Cloud Storage or on the Web.
     """
+    concanetated_text  = ""
+    #try:
     from google.cloud import vision
     client = vision.ImageAnnotatorClient()
 
@@ -409,7 +450,6 @@ def detect_text(imagepath):
     #print(texts)
 
     idx  = 0
-    concanetated_text  = ""
     for text in texts:
         print(text)
         if idx == 0:
@@ -417,6 +457,12 @@ def detect_text(imagepath):
         idx = idx + 1
 
     if response.error.message:
-        concanetated_text = ''
+        concanetated_text = 'error: ' + response.error.message
+        print("error: " + response.error.message)
+
+    #except:
+    #    print("error: unknown")
+    #    concanetated_text = 'error: unknown'
+
 
     return concanetated_text
