@@ -45,7 +45,7 @@ def imageboxes2text():
     url = request.args.get("url")
     content = request.json
 
-    print("Positions")
+    print("imageboxes2text : Positions")
     print(content["positions"])
     
     #positions = image_boxes_to_text(url, content["positions"])
@@ -57,8 +57,8 @@ def image2dboxes2text():
     url = request.args.get("url")
     content = request.json
 
-    print("Positions")
-    #print(content["positions"])
+    print("/image2dboxes2text: Positions")
+    print(content["positions"])
     
     #positions = image_2dboxes_to_text(url, content["positions"])
     positions = image_2dboxes_to_text_vision_api(url, content["positions"])

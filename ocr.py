@@ -167,20 +167,29 @@ def image_boxes_to_text_vision_api(imageUrl, positions):
         croppedimg = img[int(position['y']):int(position['y']) + int(position['h']), int(position['x']):int(position['x']) + int(position['w'])]
         #d = pytesseract.image_to_data(croppedimg, output_type=Output.DICT)
 
-        filename = random_string(10)
-        filename = "/tmp/" + filename + ".png";
-        cv2.imwrite(filename, croppedimg)
+        try:
+            filename = random_string(10)
+            filename = "/tmp/" + filename + ".png";
+            cv2.imwrite(filename, croppedimg)
 
-        print("Detecting text in " + filename)
-        text = detect_text(filename)
-        text = text.strip()
+            print("image_boxes_to_text_vision_api.Detecting text in " + filename)
+            #result = detect_text(filename)
+            result = detect_document_text(filename)
+            text = result[0]
+            text = text.strip()
+            confidence = result[1]
 
-        position['text'] = text
-        print ("position")
-        print (position)
+            position['text'] = text
+            position['confidence'] = confidence
+            #print ("position")
+            #print (position)
 
-        if os.path.exists(filename):
-            os.remove(filename)
+            if os.path.exists(filename):
+                print("image_boxes_to_text_vision_api.delete " + filename)
+                os.remove(filename)
+        except:
+            print("error.for.image_boxes_to_text_vision_api")
+
     
 
     # Draw rectangles to image, save to temporary file, and upload it
@@ -193,6 +202,7 @@ def image_boxes_to_text_vision_api(imageUrl, positions):
 
     # delete after uploading it
     if os.path.exists(fname):
+        print("image_boxes_to_text_vision_api.delete visualisation temp image:  " + fname)
         os.remove(fname)
 
     # Create response dictionary for position and image
@@ -229,8 +239,8 @@ def image_2dboxes_to_text(imageUrl, rows):
 
             text = text.strip()
             position['text'] = text
-            print ("position")
-            print (position)
+            #print ("position")
+            #print (position)
 
             newRow.append(position)
 
@@ -284,21 +294,40 @@ def image_2dboxes_to_text_vision_api(imageUrl, rows):
             #d = pytesseract.image_to_data(croppedimg, output_type=Output.DICT)
 
             text = ""
-            filename = random_string(10)
-            filename = "/tmp/" + filename + ".png";
-            cv2.imwrite(filename, croppedimg)
+            try:
 
-            print("Detecting text in " + filename)
-            text = detect_text(filename)
-            text = text.strip()
-            position['text'] = text
-            print ("position")
-            print (position)
+                if('fieldname' in position):
+                    filename = random_string(10)
+                    filename = "/tmp/" + filename + ".png";
+                    cv2.imwrite(filename, croppedimg)
+
+                    print("image_2dboxes_to_text_vision_api.Detecting text in " + filename)
+                    #result = detect_text(filename)
+                    result = detect_document_text(filename)
+                    text = result[0]
+                    text = text.strip()
+                    confidence = result[1]
+
+                    position['text'] = text 
+                    position['confidence'] = confidence
+                else:
+                    position['text'] = ''
+                    position['confidence'] = 1
+
+                #print ("position")
+                #print (position)
+            except:
+                print("error.for.image_2dboxes_to_text_vision_api")
 
             newRow.append(position)
 
-            if os.path.exists(filename):
-                os.remove(filename)
+
+            try:
+                if os.path.exists(filename):
+                    print("image_2dboxes_to_text_vision_api.Delete temp  filename: " + filename)
+                    os.remove(filename)
+            except:
+                print("error.for.image_2dboxes_to_text_vision_api.removefile")
 
             if len(text) == 0:
                 total_empty = total_empty + 1
@@ -450,11 +479,14 @@ def detect_text(imagepath):
     #print(texts)
 
     idx  = 0
+    confidence = 100
     for text in texts:
         print(text)
         if idx == 0:
             concanetated_text = concanetated_text + text.description + ' '
+        confidence = text.confidence
         idx = idx + 1
+        
 
     if response.error.message:
         concanetated_text = 'error: ' + response.error.message
@@ -464,5 +496,50 @@ def detect_text(imagepath):
     #    print("error: unknown")
     #    concanetated_text = 'error: unknown'
 
+    return [concanetated_text, confidence]
 
-    return concanetated_text
+
+def detect_document_text(imagepath):
+    """Detects text in the file located in Google Cloud Storage or on the Web.
+    """
+    concanetated_text  = ""
+    confidence = 100
+    total_confidence = 0
+    total_words = 0
+    #try:
+    from google.cloud import vision
+    client = vision.ImageAnnotatorClient()
+
+    with io.open(imagepath, 'rb') as image_file:
+        content = image_file.read()
+
+    image = vision.Image(content=content)
+
+    response = client.document_text_detection(image=image)
+    for page in response.full_text_annotation.pages:
+        for block in page.blocks:
+            for paragraph in block.paragraphs:
+                for word in paragraph.words:
+                    word_text = ''.join([
+                        symbol.text for symbol in word.symbols
+                    ])
+                    print('Word text: {} (confidence: {})'.format(
+                        word_text, word.confidence))
+
+                    concanetated_text = concanetated_text + ' ' + word_text
+                    total_confidence = total_confidence + word.confidence
+                    total_words = total_words + 1
+
+    if total_words > 0:
+        confidence = total_confidence / total_words
+
+    if response.error.message:
+        raise Exception(
+            '{}\nFor more info on error messages, check: '
+            'https://cloud.google.com/apis/design/errors'.format(
+                response.error.message))
+    #except:
+    #    print("error: unknown")
+    #    concanetated_text = 'error: unknown'
+
+    return [concanetated_text, confidence]
