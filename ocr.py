@@ -387,7 +387,8 @@ def draw_image_2dboxes(imageUrl, rows):
 
 def upload_image(filename):
     file = open(filename, "rb")
-    url = os.environ["UPLOADER_API"] + "/upload/gcs/" + os.environ["GCP_PROJECT"] + "/" + os.environ["GCP_UPLOAD_BUCKET"] + "/" + os.environ["GCP_UPLOAD_FOLDER"]
+    #url = os.environ["UPLOADER_API"] + "/upload/gcs/" + os.environ["GCP_PROJECT"] + "/" + os.environ["GCP_UPLOAD_BUCKET"] + "/" + os.environ["GCP_UPLOAD_FOLDER"]
+    url = os.environ["UPLOADER_API"] + "/gcs/upload?path=" + "/" + os.environ["GCP_UPLOAD_BUCKET"] + "/" + os.environ["GCP_UPLOAD_FOLDER"] + "&project=" + os.environ["GCP_PROJECT"]
     print("uploading to : " + url)
     response = requests.post(url, files = {"file": file})
     file.close()
